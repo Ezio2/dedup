@@ -1,0 +1,12 @@
+# Ignore everything
+*
+# Don't ignore directories, so we can recurse into them
+!*/
+.idea/
+target/
+# Don't ignore .gitignore and *.foo files
+!.gitignore
+!*.scala
+!*.sbt
+!*.iml
+!*.py

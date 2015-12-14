@@ -13,9 +13,9 @@ lazy val util = (project in file("util")).
       "com.ibm.icu" % "icu4j" % "56.1",
       "org.msgpack" %% "msgpack-scala" % "0.6.11",
       "org.json4s" %% "json4s-jackson" % "3.3.0",
-      "com.typesafe" % "config" % "1.3.0",
+      "com.typesafe" % "config" % "1.2.1",
       "log4j" % "log4j" % "1.2.17",
-      "com.typesafe.akka" %% "akka-actor" % "2.4.1",
+      "com.typesafe.akka" %% "akka-actor" % "2.3.11",
       "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test",
       "org.scalaj" %% "scalaj-http" % "1.1.4"
     ))

@@ -10,3 +10,5 @@ target/
 !*.sbt
 !*.iml
 !*.py
+!*.properties
+

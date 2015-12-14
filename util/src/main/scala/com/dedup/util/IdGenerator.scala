@@ -39,5 +39,5 @@ class IdGenerator(url: String, local: Boolean = false, cacheSize: Int = 10000, i
 
   def get(): Long = queue.take()
 
-  def close() = system.terminate()
+  def close() = system.shutdown()
 }

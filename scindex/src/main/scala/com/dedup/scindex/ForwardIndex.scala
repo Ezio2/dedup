@@ -56,7 +56,7 @@ class ForwardIndex[A: TypeAlias.L, B: TypeAlias.L](
     client.remove(key)
   }
 
-  def close() = system.terminate()
+  def close() = system.shutdown()
 
 
 }

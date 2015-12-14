@@ -53,5 +53,5 @@ class InvertIndex[A: TypeAlias.L, B: TypeAlias.L](
     client.remove(key, value)
   }
 
-  def close() = system.terminate()
+  def close() = system.shutdown()
 }

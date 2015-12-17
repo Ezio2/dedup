@@ -11,13 +11,14 @@ lazy val util = (project in file("util")).
       "com.google.guava" % "guava" % "18.0",
       "com.github.nscala-time" %% "nscala-time" % "2.6.0",
       "com.ibm.icu" % "icu4j" % "56.1",
+      "org.slf4j" % "slf4j-api" % "1.7.7",
       "org.msgpack" %% "msgpack-scala" % "0.6.11",
       "org.json4s" %% "json4s-jackson" % "3.3.0",
       "com.typesafe" % "config" % "1.2.1",
-      "log4j" % "log4j" % "1.2.17",
       "com.typesafe.akka" %% "akka-actor" % "2.3.11",
       "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test",
-      "org.scalaj" %% "scalaj-http" % "1.1.4"
+      "org.scalaj" %% "scalaj-http" % "1.1.4",
+      "log4j" % "log4j" % "1.2.17"
     ))
 
 lazy val scindex = (project in file("scindex")).

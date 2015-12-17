@@ -17,7 +17,7 @@ case class Comment(id: Long, content: String, createTime: DateTime,
   private val transliterator = Transliterator.getInstance("Fullwidth-Halfwidth")
 
   val rawSignatures: Set[String] = transliterator.transliterate(
-    content.replaceAll("\\pP|\\pS|\\s", " ").replaceAll("\\s+", " ").trim
+    content.replaceAll("\\pP|\\pS|\\s", " ").replaceAll("\\s+", " ").trim.toLowerCase
   ).sliding(k).toSet
 
   val signatures: Set[Int] = rawSignatures.map(MurmurHash3.stringHash)
@@ -28,6 +28,7 @@ case class Comment(id: Long, content: String, createTime: DateTime,
   val recallSignatures: Set[Int] = minhashSignatures.grouped(r).zipWithIndex.map {
     case (x, i) => MurmurHash3.arrayHash(x.toArray :+ i)
   }.toSet
+
 }
 
 object Comment {
@@ -38,19 +39,13 @@ object Comment {
   def apply(message: String): Option[Comment] = {
     try {
       val json = parse(message)
-      if ((json \ "version").extractOrElse[String]("0.0") == "1.0") {
-        val id = (json \ "id").extract[Long]
-        val content = (json \ "content").extract[String]
-        val createTime = new DateTime((json \ "create_time").extract[Long] * 1000)
-        val k = conf.getInt("minhash.k")
-        val r = conf.getInt("minhash.row")
-        val b = conf.getInt("minhash.banding")
-        Some(Comment(id, content, createTime, k, r, b))
-      }
-      else {
-        log.warn(s"message:$message version is not right")
-        None
-      }
+      val id = (json \ "id").extract[Long]
+      val content = (json \ "content").extract[String]
+      val createTime = new DateTime((json \ "create_time").extract[Long] * 1000)
+      val k = conf.getInt("minhash.k")
+      val r = conf.getInt("minhash.row")
+      val b = conf.getInt("minhash.banding")
+      Some(Comment(id, content, createTime, k, r, b))
     } catch {
       case t: Throwable =>
         log.error(s"message:$message parse something wrong:" + "\n" +

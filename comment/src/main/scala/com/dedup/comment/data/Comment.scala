@@ -14,11 +14,7 @@ case class Comment(id: Long, content: String, createTime: DateTime,
                    k: Int, r: Int, b: Int) {
   require(k >= 1 && r >= 1 && b >= 1, "minhash arguments illegal")
 
-  private val transliterator = Transliterator.getInstance("Fullwidth-Halfwidth")
-
-  val rawSignatures: Set[String] = transliterator.transliterate(
-    content.replaceAll("\\pP|\\pS|\\s", " ").replaceAll("\\s+", " ").trim.toLowerCase
-  ).sliding(k).toSet
+  val rawSignatures: Set[String] = content.sliding(k).toSet
 
   val signatures: Set[Int] = rawSignatures.map(MurmurHash3.stringHash)
 
@@ -35,12 +31,15 @@ object Comment {
   private val conf = ConfigFactory.load("comment")
   private val log = Logger.getLogger(this.getClass.getSimpleName)
   implicit val formats = DefaultFormats
+  private val transliterator = Transliterator.getInstance("Fullwidth-Halfwidth")
 
   def apply(message: String): Option[Comment] = {
     try {
       val json = parse(message)
       val id = (json \ "id").extract[Long]
-      val content = (json \ "content").extract[String]
+      val content = transliterator.transliterate(
+        (json \ "content").extract[String].
+          replaceAll("\\pP|\\pS|\\s", " ").replaceAll("\\s+", " ").trim.toLowerCase)
       val createTime = new DateTime((json \ "create_time").extract[Long] * 1000)
       val k = conf.getInt("minhash.k")
       val r = conf.getInt("minhash.row")

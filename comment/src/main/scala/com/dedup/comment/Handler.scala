@@ -4,7 +4,7 @@ import com.dedup.comment.data.Article.ArticleDeserializable
 import com.dedup.comment.data.{Article, Comment, Result}
 import com.dedup.scindex.Conversions._
 import com.dedup.scindex.{ForwardIndex, InvertIndex}
-import com.dedup.util.{Distance, IdGenerator, TimeMeasure}
+import com.dedup.util.{Similarity, IdGenerator, TimeMeasure}
 import org.apache.log4j.Logger
 import com.github.nscala_time.time.Imports._
 
@@ -17,7 +17,9 @@ class Handler(forwardIndexDir: String,
               invertIndexCacheSize: Int,
               invertIndexTtl: Long,
               idGenerator: IdGenerator,
-              threshold: Double) {
+              jThreshold: Double,
+              lThreshold: Double
+               ) {
   val log = Logger.getLogger(this.getClass.getSimpleName)
   private val forwardIndex = new ForwardIndex[Long, Article](forwardIndexDir, forwardIndexCacheSize, forwardIndexTtl)
   private val invertIndex = new InvertIndex[Int, Long](invertIndexDir, invertIndexCacheSize, invertIndexTtl)
@@ -50,8 +52,11 @@ class Handler(forwardIndexDir: String,
 
   def dedupOne(comment: Comment, articles: List[Article]): Option[Article] = if (articles.isEmpty) None
   else {
-    val cand = articles.par.map(a => a -> Distance.jaccard(a.signatures, comment.signatures)).maxBy(_._2)
-    if (cand._2 >= threshold) Some(cand._1) else None
+    val cand1 = articles.par.map(a =>
+      a -> Similarity.jaccard(a.signatures, comment.signatures)).filter(_._2 >= jThreshold / 2)
+    val cand2 = cand1.par.map(x => (x._1, x._2, Similarity.levenstein(x._1.content, comment.content))).filter(
+      x => x._2 >= jThreshold || x._3 >= lThreshold)
+    if (cand2.nonEmpty) Some(cand2.maxBy(x => (x._2, x._3))._1) else None
   }
 
   def dedupOne(comment: Comment): Option[Article] = {
@@ -70,9 +75,9 @@ class Handler(forwardIndexDir: String,
   def merge(results: List[(Comment, Option[Article])]): List[(Comment, Article)] = {
     val r = mutable.Map[Comment, Article]()
     results.sortBy(_._1.createTime).foreach {
-      case (c, o) =>
-        val article = dedupOne(c, (r ++ o.map(x => x.id -> x).toMap).values.toList) match {
-          case Some(ar) => ar
+      case (c, oa) =>
+        val article = dedupOne(c, (r ++ oa.map(x => x.id -> x).toMap).values.toList) match {
+          case Some(ar) => Article(c, ar.clusterId)
           case None => Article(c, idGenerator.get())
         }
         r += c -> article

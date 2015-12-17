@@ -12,6 +12,7 @@ import org.msgpack.annotation.Message
 private class ArticleMessagePack {
   var id: Long = 0L
   var clusterId: Long = 0L
+  var content: String = ""
   var signatures: Set[Int] = Set()
   var recallSignatures: Set[Int] = Set()
   var createTime: Long = 0L
@@ -21,6 +22,7 @@ private class ArticleMessagePack {
 case class Article(id: Long,
                    clusterId: Long,
                    signatures: Set[Int],
+                   content: String,
                    recallSignatures: Set[Int],
                    createTime: DateTime) extends Serializable {
 
@@ -28,6 +30,7 @@ case class Article(id: Long,
     val obj = new ArticleMessagePack
     obj.id = id
     obj.clusterId = clusterId
+    obj.content = content
     obj.signatures = signatures
     obj.recallSignatures = recallSignatures
     obj.createTime = createTime.getMillis
@@ -41,7 +44,7 @@ object Article {
   val log = Logger.getLogger(this.getClass.getSimpleName)
 
   def apply(comment: Comment, clusterId: Long): Article =
-    Article(comment.id, clusterId, comment.signatures, comment.recallSignatures, comment.createTime)
+    Article(comment.id, clusterId, comment.signatures, comment.content, comment.recallSignatures, comment.createTime)
 
   ScalaMessagePack.init()
 
@@ -52,6 +55,7 @@ object Article {
         obj.id,
         obj.clusterId,
         obj.signatures,
+        obj.content,
         obj.recallSignatures,
         new DateTime(obj.createTime)
       ))

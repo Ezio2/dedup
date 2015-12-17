@@ -18,8 +18,7 @@ class Handler(forwardIndexDir: String,
               invertIndexTtl: Long,
               idGenerator: IdGenerator,
               jThreshold: Double,
-              lThreshold: Double
-               ) {
+              lThreshold: Double) {
   val log = Logger.getLogger(this.getClass.getSimpleName)
   private val forwardIndex = new ForwardIndex[Long, Article](forwardIndexDir, forwardIndexCacheSize, forwardIndexTtl)
   private val invertIndex = new InvertIndex[Int, Long](invertIndexDir, invertIndexCacheSize, invertIndexTtl)

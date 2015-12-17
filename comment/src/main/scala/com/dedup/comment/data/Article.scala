@@ -24,7 +24,7 @@ case class Article(id: Long,
                    recallSignatures: Set[Int],
                    createTime: DateTime) extends Serializable {
 
-  def dump: Array[Byte] = {
+  override def dump: Array[Byte] = {
     val obj = new ArticleMessagePack
     obj.id = id
     obj.clusterId = clusterId
@@ -42,6 +42,8 @@ object Article {
 
   def apply(comment: Comment, clusterId: Long): Article =
     Article(comment.id, clusterId, comment.signatures, comment.recallSignatures, comment.createTime)
+
+  ScalaMessagePack.init()
 
   implicit object ArticleDeserializable extends Deserializable[Article] {
     override def load(bytes: Array[Byte]): Option[Article] = try {

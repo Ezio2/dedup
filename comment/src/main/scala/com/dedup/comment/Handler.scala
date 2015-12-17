@@ -41,7 +41,11 @@ class Handler(forwardIndexDir: String,
     val results = TimeMeasure.profile("merge") {
       merge(dedupResults) ++ existsResults
     }
-    results.par.map(r => Result(r._1.id, r._2.clusterId).dump).toList
+    val r = TimeMeasure.profile("results") {
+      results.par.map(r => Result(r._1.id, r._2.clusterId).dump).toList
+    }
+    TimeMeasure.logProfile(profile, "dedup")
+    r
   }
 
   def dedupOne(comment: Comment, articles: List[Article]): Option[Article] = if (articles.isEmpty) None
@@ -72,6 +76,7 @@ class Handler(forwardIndexDir: String,
           case None => Article(c, idGenerator.get())
         }
         r += c -> article
+        log.info(s"comment:${c.id} cluster to article:${article.id} cluster:${article.clusterId}")
     }
     r.values.par.foreach {
       case ar =>

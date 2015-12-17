@@ -11,4 +11,4 @@ target/
 !*.iml
 !*.py
 !*.properties
-
+!*.conf

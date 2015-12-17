@@ -69,11 +69,14 @@ class HandlerTest extends FunSuite {
     if (similarity > 0) info(s"similar:$similarity id:${ca.id} content:${ca.content} vs id:${cb.id} content:${cb.content}")
   }
 
-  test("fuck") {
-    data.combinations(2).foreach(x => distance(x(0), x(1)))
-    //info(s"${forwardDir.toString}")
-    //val results = data.grouped(7).flatMap(handler.handle)//.map(read[Map[String, Long]])
-   //info(s"${results.toList}")
+  test("data similarity") {
+    data.combinations(2).foreach(x => distance(x.head, x(1)))
+  }
+
+  test("correct") {
+    info(s"${forwardDir.toString}")
+    val results = data.grouped(7).flatMap(handler.handle).map(read[Map[String, Long]])
+    info(s"${results.toList}")
   }
 
   Seq("rm", "-rf", forwardDir.toString).!!

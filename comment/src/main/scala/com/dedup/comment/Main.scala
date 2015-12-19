@@ -6,7 +6,6 @@ import java.{lang, util}
 import com.dedup.comment.data.Comment
 import com.dedup.thrift.comment.{DedupComment, Req}
 import com.dedup.util.IdGenerator
-import com.github.nscala_time.time.Imports.DateTime
 import com.typesafe.config.ConfigFactory
 import org.apache.log4j.{Logger, PropertyConfigurator}
 import org.apache.thrift.server.TThreadPoolServer
@@ -16,7 +15,7 @@ import scala.collection.JavaConversions._
 
 class ServerHandler(handler: Handler) extends DedupComment.Iface {
   override def dedup(reqs: util.List[Req]): util.Map[lang.Long, lang.Long] = {
-    val comments = reqs.par.map(r => Comment(r.id, r.content, new DateTime(r.getCreateTime * 1000))).toList
+    val comments = reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
     handler.synchronized {
       handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
     }
@@ -37,8 +36,10 @@ object Main extends App {
     conf.getInt("rocksdb.invertIndex.cacheSize"),
     conf.getDuration("rocksdb.invertIndex.ttl", TimeUnit.MILLISECONDS),
     new IdGenerator(conf.getString("idGeneratorUrl")),
-    conf.getDouble("threshold.jaccard"),
-    conf.getDouble("threshold.levenshtein"))
+    conf.getDouble("threshold.jaccard.t"),
+    conf.getDouble("threshold.levenshtein.filter_jaccard"),
+    conf.getDouble("threshold.levenshtein.t")
+  )
 
 
   val processor = new DedupComment.Processor(new ServerHandler(handler))
@@ -46,6 +47,8 @@ object Main extends App {
   val a = new TThreadPoolServer.Args(serverTransport).processor(processor)
   a.maxWorkerThreads(conf.getInt("threadNum"))
   val server = new TThreadPoolServer(a)
+
+  log.info(s"comment dedup start at port:${conf.getInt("port")} threads:${conf.getInt("threadNum")}")
   server.serve()
 
 }

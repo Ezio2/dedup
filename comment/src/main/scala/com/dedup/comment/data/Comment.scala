@@ -30,11 +30,14 @@ case class Comment(id: Long, content: String, createTime: DateTime,
 object Comment {
   private val conf = ConfigFactory.load("comment")
   private val log = Logger.getLogger(this.getClass.getSimpleName)
+
   implicit val formats = DefaultFormats
+
   private val transliterator = Transliterator.getInstance("Fullwidth-Halfwidth")
   private val k = conf.getInt("minhash.k")
   private val r = conf.getInt("minhash.row")
   private val b = conf.getInt("minhash.banding")
+
   def apply(message: String): Option[Comment] = {
     try {
       val json = parse(message)
@@ -50,5 +53,12 @@ object Comment {
           t + "\n" + t.getStackTrace.mkString("\n"))
         None
     }
+  }
+
+  def apply(id: Long, rawContent: String, createSeconds: Long): Option[Comment] = {
+    val content = transliterator.transliterate(
+      rawContent.replaceAll("\\pP|\\pS|\\s", " ").replaceAll("\\s+", " ").trim.toLowerCase)
+    val createTime = new DateTime(createSeconds * 1000)
+    Some(Comment(id, content, createTime))
   }
 }

@@ -17,8 +17,7 @@ class Handler(forwardIndexDir: String,
               invertIndexCacheSize: Int,
               invertIndexTtl: Long,
               idGenerator: IdGenerator,
-              jThreshold: Double,
-              lThreshold: Double) {
+              jt: Double, lf: Double, lt: Double) {
   val log = Logger.getLogger(this.getClass.getSimpleName)
   private val forwardIndex = new ForwardIndex[Long, Article](forwardIndexDir, forwardIndexCacheSize, forwardIndexTtl)
   private val invertIndex = new InvertIndex[Int, Long](invertIndexDir, invertIndexCacheSize, invertIndexTtl)
@@ -27,10 +26,12 @@ class Handler(forwardIndexDir: String,
     implicit val profile = mutable.Map[String, Long]()
     val existsResults = mutable.ArrayBuffer[(Comment, Article)]()
     val newComments = mutable.ArrayBuffer[Comment]()
-    comments.par.map(c => c -> forwardIndex.get(c.id)).toList.foreach {
-      case (c, o) => o match {
-        case Some(ar) => existsResults += ((c, ar))
-        case None => newComments += c
+    TimeMeasure.profile("new") {
+      comments.par.map(c => c -> forwardIndex.get(c.id)).toList.foreach {
+        case (c, o) => o match {
+          case Some(ar) => existsResults += ((c, ar))
+          case None => newComments += c
+        }
       }
     }
     val dedupResults = TimeMeasure.profile("dedup") {
@@ -53,10 +54,12 @@ class Handler(forwardIndexDir: String,
     }
     val existsResults = mutable.ArrayBuffer[(Comment, Article)]()
     val newComments = mutable.ArrayBuffer[Comment]()
-    comments.par.map(c => c -> forwardIndex.get(c.id)).toList.foreach {
-      case (c, o) => o match {
-        case Some(ar) => existsResults += ((c, ar))
-        case None => newComments += c
+    TimeMeasure.profile("new") {
+      comments.par.map(c => c -> forwardIndex.get(c.id)).toList.foreach {
+        case (c, o) => o match {
+          case Some(ar) => existsResults += ((c, ar))
+          case None => newComments += c
+        }
       }
     }
     val dedupResults = TimeMeasure.profile("dedup") {
@@ -75,9 +78,9 @@ class Handler(forwardIndexDir: String,
   def dedupOne(comment: Comment, articles: List[Article]): Option[Article] = if (articles.isEmpty) None
   else {
     val cand1 = articles.par.map(a =>
-      a -> Similarity.jaccard(a.signatures, comment.signatures)).filter(_._2 >= jThreshold / 2)
+      a -> Similarity.jaccard(a.signatures, comment.signatures)).filter(_._2 >= lf)
     val cand2 = cand1.par.map(x => (x._1, x._2, Similarity.levenstein(x._1.content, comment.content))).filter(
-      x => x._2 >= jThreshold || x._3 >= lThreshold)
+      x => x._2 >= jt || x._3 >= lt)
     if (cand2.nonEmpty) Some(cand2.maxBy(x => (x._2, x._3))._1) else None
   }
 
@@ -98,7 +101,7 @@ class Handler(forwardIndexDir: String,
     val r = mutable.Map[Comment, Article]()
     results.sortBy(_._1.createTime).foreach {
       case (c, oa) =>
-        val article = dedupOne(c, (r ++ oa.map(x => x.id -> x).toMap).values.toList) match {
+        val article = dedupOne(c, r.values.toList ++ oa) match {
           case Some(ar) => Article(c, ar.clusterId)
           case None => Article(c, idGenerator.get())
         }

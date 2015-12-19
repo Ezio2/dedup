@@ -18,7 +18,8 @@ lazy val util = (project in file("util")).
       "com.typesafe.akka" %% "akka-actor" % "2.3.11",
       "org.scalatest" % "scalatest_2.11" % "2.2.4" % "test",
       "org.scalaj" %% "scalaj-http" % "1.1.4",
-      "log4j" % "log4j" % "1.2.17"
+      "log4j" % "log4j" % "1.2.17",
+      "org.apache.thrift" % "libthrift" % "0.9.2"
     ))
 
 lazy val scindex = (project in file("scindex")).

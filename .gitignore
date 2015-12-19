@@ -10,6 +10,7 @@ target/
 !*.sbt
 !*.iml
 !*.py
-!*.properties
+!*.java
 !*.conf
+!*.properties
 !*.thrift

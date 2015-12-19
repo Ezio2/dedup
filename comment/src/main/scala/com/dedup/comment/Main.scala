@@ -1,8 +1,51 @@
 package com.dedup.comment
 
-/**
- * Created by xianyubo on 15/12/12.
- */
-class Main extends App {
+import java.util.concurrent.TimeUnit
+import java.{lang, util}
+
+import com.dedup.comment.data.Comment
+import com.dedup.thrift.comment.{DedupComment, Req}
+import com.dedup.util.IdGenerator
+import com.github.nscala_time.time.Imports.DateTime
+import com.typesafe.config.ConfigFactory
+import org.apache.log4j.{Logger, PropertyConfigurator}
+import org.apache.thrift.server.TThreadPoolServer
+import org.apache.thrift.transport.TServerSocket
+
+import scala.collection.JavaConversions._
+
+class ServerHandler(handler: Handler) extends DedupComment.Iface {
+  override def dedup(reqs: util.List[Req]): util.Map[lang.Long, lang.Long] = {
+    val comments = reqs.par.map(r => Comment(r.id, r.content, new DateTime(r.getCreateTime * 1000))).toList
+    handler.synchronized {
+      handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
+    }
+  }
+}
+
+object Main extends App {
+  private val conf = ConfigFactory.load("comment")
+  System.setProperty("LOG_DIR", conf.getString("log_home"))
+  PropertyConfigurator.configure(getClass.getResource("/comment.properties"))
+  private val log = Logger.getLogger(this.getClass.getSimpleName)
+
+  val handler = new Handler(
+    conf.getString("rocksdb.forwardIndex.pathPrefix"),
+    conf.getInt("rocksdb.forwardIndex.cacheSize"),
+    conf.getDuration("rocksdb.forwardIndex.ttl", TimeUnit.MILLISECONDS),
+    conf.getString("rocksdb.invertIndex.pathPrefix"),
+    conf.getInt("rocksdb.invertIndex.cacheSize"),
+    conf.getDuration("rocksdb.invertIndex.ttl", TimeUnit.MILLISECONDS),
+    new IdGenerator(conf.getString("idGeneratorUrl")),
+    conf.getDouble("threshold.jaccard"),
+    conf.getDouble("threshold.levenshtein"))
+
+
+  val processor = new DedupComment.Processor(new ServerHandler(handler))
+  val serverTransport = new TServerSocket(conf.getInt("port"))
+  val a = new TThreadPoolServer.Args(serverTransport).processor(processor)
+  a.maxWorkerThreads(conf.getInt("threadNum"))
+  val server = new TThreadPoolServer(a)
+  server.serve()
 
 }

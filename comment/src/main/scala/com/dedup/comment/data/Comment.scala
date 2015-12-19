@@ -11,7 +11,7 @@ import scala.util.hashing.MurmurHash3
 
 
 case class Comment(id: Long, content: String, createTime: DateTime,
-                   k: Int, r: Int, b: Int) {
+                   k: Int = Comment.k, r: Int = Comment.r, b: Int = Comment.b) {
   require(k >= 1 && r >= 1 && b >= 1, "minhash arguments illegal")
 
   val rawSignatures: Set[String] = content.sliding(k).toSet
@@ -32,7 +32,9 @@ object Comment {
   private val log = Logger.getLogger(this.getClass.getSimpleName)
   implicit val formats = DefaultFormats
   private val transliterator = Transliterator.getInstance("Fullwidth-Halfwidth")
-
+  private val k = conf.getInt("minhash.k")
+  private val r = conf.getInt("minhash.row")
+  private val b = conf.getInt("minhash.banding")
   def apply(message: String): Option[Comment] = {
     try {
       val json = parse(message)
@@ -41,10 +43,7 @@ object Comment {
         (json \ "content").extract[String].
           replaceAll("\\pP|\\pS|\\s", " ").replaceAll("\\s+", " ").trim.toLowerCase)
       val createTime = new DateTime((json \ "create_time").extract[Long] * 1000)
-      val k = conf.getInt("minhash.k")
-      val r = conf.getInt("minhash.row")
-      val b = conf.getInt("minhash.banding")
-      Some(Comment(id, content, createTime, k, r, b))
+      Some(Comment(id, content, createTime))
     } catch {
       case t: Throwable =>
         log.error(s"message:$message parse something wrong:" + "\n" +

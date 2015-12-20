@@ -1,4 +1,4 @@
-namespace py com.dedup.thrift.comment
+namespace py ss.article.dedup.comment
 namespace java com.dedup.thrift.comment
 
 struct Req {

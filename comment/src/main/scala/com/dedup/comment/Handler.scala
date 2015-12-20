@@ -25,17 +25,17 @@ class Handler(forwardIndexDir: String,
   def handler(comments: List[Comment]): Map[Long, Long] = {
     implicit val profile = mutable.Map[String, Long]()
     val existsResults = mutable.ArrayBuffer[(Comment, Article)]()
-    val newComments = mutable.ArrayBuffer[Comment]()
+    val newComments = mutable.Map[Long, Comment]()
     TimeMeasure.profile("new") {
       comments.par.map(c => c -> forwardIndex.get(c.id)).toList.foreach {
         case (c, o) => o match {
           case Some(ar) => existsResults += ((c, ar))
-          case None => newComments += c
+          case None => newComments += c.id -> c
         }
       }
     }
     val dedupResults = TimeMeasure.profile("dedup") {
-      dedup(newComments.toVector)
+      dedup(newComments.values.toVector)
     }
     val results = TimeMeasure.profile("merge") {
       merge(dedupResults) ++ existsResults
@@ -53,17 +53,17 @@ class Handler(forwardIndexDir: String,
       messages.par.flatMap(Comment(_)).toVector
     }
     val existsResults = mutable.ArrayBuffer[(Comment, Article)]()
-    val newComments = mutable.ArrayBuffer[Comment]()
+    val newComments = mutable.Map[Long, Comment]()
     TimeMeasure.profile("new") {
       comments.par.map(c => c -> forwardIndex.get(c.id)).toList.foreach {
         case (c, o) => o match {
           case Some(ar) => existsResults += ((c, ar))
-          case None => newComments += c
+          case None => newComments += c.id -> c
         }
       }
     }
     val dedupResults = TimeMeasure.profile("dedup") {
-      dedup(newComments.toVector)
+      dedup(newComments.values.toVector)
     }
     val results = TimeMeasure.profile("merge") {
       merge(dedupResults) ++ existsResults

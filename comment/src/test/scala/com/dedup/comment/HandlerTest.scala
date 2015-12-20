@@ -72,6 +72,7 @@ class HandlerTest extends FunSuite {
       Map("id" -> 19, "content" -> "有便秘的朋友人看我名字人", "create_time" -> System.currentTimeMillis),
       Map("id" -> 20, "content" -> "有便秘的朋友榆看我名字榆", "create_time" -> System.currentTimeMillis)
     )
+
   )
 
   val dataStr = data.flatMap(x => x.map(write(_)))

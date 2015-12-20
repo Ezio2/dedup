@@ -102,11 +102,16 @@ class Handler(forwardIndexDir: String,
     results.sortBy(_._1.createTime).foreach {
       case (c, oa) =>
         val article = dedupOne(c, r.values.toList ++ oa) match {
-          case Some(ar) => Article(c, ar.clusterId)
-          case None => Article(c, idGenerator.get())
+          case Some(ar) =>
+            log.info(s"comment:${c.id} cluster to article:${ar.id} cluster:${ar.clusterId}")
+            Article(c, ar.clusterId)
+          case None =>
+            val clusterId = idGenerator.get()
+            log.info(s"comment:${c.id} create new cluster:$clusterId")
+            Article(c, clusterId)
         }
         r += c -> article
-        log.info(s"comment:${c.id} cluster to article:${article.id} cluster:${article.clusterId}")
+        if (log.isDebugEnabled) log.debug(article)
     }
     r.values.par.foreach {
       case ar =>

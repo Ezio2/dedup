@@ -5,7 +5,7 @@ import java.{lang, util}
 
 import com.dedup.comment.data.Comment
 import com.dedup.thrift.comment.{DedupComment, Req}
-import com.dedup.util.IdGenerator
+import com.dedup.util.{TimeMeasure, IdGenerator}
 import com.typesafe.config.ConfigFactory
 import org.apache.log4j.{Logger, PropertyConfigurator}
 import org.apache.thrift.server.TThreadPoolServer
@@ -14,11 +14,17 @@ import org.apache.thrift.transport.TServerSocket
 import scala.collection.JavaConversions._
 
 class ServerHandler(handler: Handler) extends DedupComment.Iface {
+  private val log = Logger.getLogger(this.getClass.getSimpleName)
+
   override def dedup(reqs: util.List[Req]): util.Map[lang.Long, lang.Long] = {
-    val comments = reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
-    handler.synchronized {
-      handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
+    val (time, r) = TimeMeasure.timeMeasure {
+      val comments = reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
+      handler.synchronized {
+        handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
+      }
     }
+    log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / time.toDouble}")
+    r
   }
 }
 

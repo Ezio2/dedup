@@ -16,8 +16,9 @@ import scala.collection.mutable
 
 class ServerHandler(handler: Handler) extends DedupComment.Iface {
   private val log = Logger.getLogger(this.getClass.getSimpleName)
-  implicit val profile = mutable.Map[String, Long]()
   override def dedup(reqs: util.List[Req]): util.Map[lang.Long, lang.Long] = {
+    implicit val profile = mutable.Map[String, Long]()
+
     val comments = TimeMeasure.profile("parseComments") {
       reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
     }

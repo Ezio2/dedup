@@ -22,8 +22,7 @@ class Handler(forwardIndexDir: String,
   private val forwardIndex = new ForwardIndex[Long, Article](forwardIndexDir, forwardIndexCacheSize, forwardIndexTtl)
   private val invertIndex = new InvertIndex[Int, Long](invertIndexDir, invertIndexCacheSize, invertIndexTtl)
 
-  def handler(comments: List[Comment]): Map[Long, Long] = {
-    implicit val profile = mutable.Map[String, Long]()
+  def handler(comments: List[Comment])(implicit profile: mutable.Map[String, Long]): Map[Long, Long] = {
     val existsResults = mutable.ArrayBuffer[(Comment, Article)]()
     val newComments = mutable.Map[Long, Comment]()
     TimeMeasure.profile("new") {
@@ -40,11 +39,9 @@ class Handler(forwardIndexDir: String,
     val results = TimeMeasure.profile("merge") {
       merge(dedupResults) ++ existsResults
     }
-    val r = TimeMeasure.profile("results") {
+    TimeMeasure.profile("results") {
       results.map(r => r._1.id -> r._2.clusterId).toMap
     }
-    TimeMeasure.logProfile(profile, "dedup")
-    r
   }
 
   def handle(messages: List[String]): List[String] = {

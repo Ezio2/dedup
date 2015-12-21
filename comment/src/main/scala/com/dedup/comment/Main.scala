@@ -12,18 +12,20 @@ import org.apache.thrift.server.TThreadPoolServer
 import org.apache.thrift.transport.TServerSocket
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable
 
 class ServerHandler(handler: Handler) extends DedupComment.Iface {
   private val log = Logger.getLogger(this.getClass.getSimpleName)
-
+  implicit val profile = mutable.Map[String, Long]()
   override def dedup(reqs: util.List[Req]): util.Map[lang.Long, lang.Long] = {
-    val (time, r) = TimeMeasure.timeMeasure {
-      val comments = reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
-      handler.synchronized {
-        handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
-      }
+    val comments = TimeMeasure.profile("parseComments") {
+      reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
     }
-    log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / time.toDouble * 1000}")
+    val r = handler.synchronized {
+      handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
+    }
+    TimeMeasure.logProfile(profile, "dedup")
+    log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / profile("total").toDouble * 1000}")
     r
   }
 }

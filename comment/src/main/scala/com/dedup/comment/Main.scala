@@ -23,7 +23,7 @@ class ServerHandler(handler: Handler) extends DedupComment.Iface {
         handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
       }
     }
-    log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / time.toDouble}")
+    log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / time.toDouble * 1000}")
     r
   }
 }

@@ -22,13 +22,12 @@ class ServerHandler(handler: Handler) extends DedupComment.Iface {
     val comments = TimeMeasure.profile("parseComments") {
       reqs.par.flatMap(r => Comment(r.id, r.content, r.getCreateTime)).toList
     }
-    handler.synchronized {
-      val r = handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
-      TimeMeasure.logProfile(profile, "dedup")
-      log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / profile("total").toDouble * 1000}")
-      r
+    val r = handler.synchronized {
+      handler.handler(comments).map(x => Long.box(x._1) -> Long.box(x._2))
     }
-
+    TimeMeasure.logProfile(profile, "dedup")
+    log.info(s"get ${reqs.size} reqs, throughput: ${reqs.size / profile.values.sum.toDouble * 1000}")
+    r
   }
 }
 

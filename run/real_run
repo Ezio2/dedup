@@ -1,0 +1,6 @@
+#!/bin/sh
+export LANG=en_US.UTF-8
+ulimit -c 10485760
+echo "`date '+%Y-%m-%d %H:%M:%S'`  `hostname -v` : comment_dedup" >> /mnt/mfs/log/svc/comment_dedup.log
+cd ../../
+exec /opt/tiger/hadoop_deploy/jdk/bin/java -Xmx50G -XX:NewSize=8g -XX:SurvivorRatio=1 -XX:+UseConcMarkSweepGC  -XX:+CMSParallelRemarkEnabled -XX:CMSInitiatingOccupancyFraction=70 -XX:+UseCMSInitiatingOccupancyOnly -XX:+UseCMSCompactAtFullCollection -XX:CMSFullGCsBeforeCompaction=0 -XX:+UseCompressedOops -XX:+CMSClassUnloadingEnabled -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -Xloggc:commentGc.log -jar ./comment/target/scala-2.11/comment-assembly-1.0.jar 1>>/dev/null 2>>/mnt/mfs/log/svc/comment_dedup_err.log
